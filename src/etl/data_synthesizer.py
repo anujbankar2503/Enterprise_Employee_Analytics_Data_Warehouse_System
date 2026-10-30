@@ -259,6 +259,7 @@ class DataSynthesizer:
         r["performance_rating"] = rating
         r["performance_score"] = score.round(2)
         r["review_status"] = np.where(rng.random(m) < 0.95, "Completed", "Pending")
+        r["comments"] = None
 
         # About 10% of reviews are not tied to a project
         r.loc[rng.random(m) < 0.10, "project_code"] = None

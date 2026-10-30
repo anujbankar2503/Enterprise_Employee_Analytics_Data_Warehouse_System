@@ -8,7 +8,7 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-from app.helpers import employee_picker
+from app.helpers import display_columns, employee_picker
 from src.db_manager import DatabaseError
 from src.entities import Review
 from src.managers import ProjectManager, ReviewManager
@@ -17,7 +17,11 @@ st.set_page_config(page_title="Reviews", layout="wide")
 st.title("Performance reviews")
 
 rm, pm = ReviewManager(), ProjectManager()
-projects = pm.list_projects()
+try:
+    projects = pm.list_projects()
+except DatabaseError as error:
+    st.error(f"Database connection problem: {error}")
+    st.stop()
 options = {None: "No project"}
 options.update({p["project_id"]: f"{p['project_code']} - {p['project_name']}" for p in projects})
 
@@ -39,10 +43,10 @@ if emp_id:
                             performance_rating=rating, performance_score=score,
                             project_id=project_id, review_status=status,
                             comments=comments.strip() or None)
-            with st.spinner("Saving review and loading it into the fact table..."):
+            with st.spinner("Saving performance review..."):
                 rid = rm.submit_review(review)
             st.cache_data.clear()
-            st.success(f"Review {rid} saved and loaded into the warehouse.")
+            st.success(f"Review {rid} saved successfully.")
         except (ValueError, DatabaseError) as e:
             st.error(f"Could not save: {e}")
 
@@ -52,4 +56,10 @@ if emp_id:
         st.caption("No reviews yet.")
     else:
         recent["performance_score"] = recent["performance_score"].astype(float)
-        st.dataframe(recent, hide_index=True)
+        st.dataframe(
+            display_columns(recent),
+            column_config={
+                "Comments": st.column_config.TextColumn("Comments", width="large"),
+            },
+            hide_index=True,
+        )

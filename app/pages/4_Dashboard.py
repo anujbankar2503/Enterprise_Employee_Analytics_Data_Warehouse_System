@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import plotly.express as px
 import streamlit as st
 
+from app.helpers import display_columns
 from src.db_manager import DatabaseError
 from src.managers import AnalyticsManager, EmployeeManager
 
@@ -33,6 +34,14 @@ def c_attrition(dim): return an.attrition_by(dim)
 def c_bottlenecks(): return an.project_bottlenecks()
 
 
+def db_call(function, *args):
+    try:
+        return function(*args)
+    except DatabaseError as error:
+        st.error(f"Database connection problem: {error}")
+        return None
+
+
 try:
     kpis, years, departments = c_kpis(), c_years(), c_departments()
 except DatabaseError as e:
@@ -57,7 +66,9 @@ tab_trend, tab_top, tab_attr, tab_proj = st.tabs(
     ["Performance trends", "Top performers", "Attrition risk", "Project bottlenecks"])
 
 with tab_trend:
-    yoy = c_yoy(dept)
+    yoy = db_call(c_yoy, dept)
+    if yoy is None:
+        st.stop()
     if yoy.empty:
         st.info("No data for this selection.")
     else:
@@ -67,17 +78,21 @@ with tab_trend:
         fig.update_xaxes(dtick=1)
         left.plotly_chart(fig)
         fig = px.bar(yoy, x="year", y="change_vs_prev", text="change_vs_prev",
-                     title="Change vs previous year (LAG window function)")
+                 title="Change from previous year")
         fig.update_xaxes(dtick=1)
         right.plotly_chart(fig)
-        st.dataframe(yoy, hide_index=True)
-    perf = c_dept_perf(year)
+        st.dataframe(display_columns(yoy), hide_index=True)
+    perf = db_call(c_dept_perf, year)
+    if perf is None:
+        st.stop()
     fig = px.bar(perf, x="department_name", y="avg_score", text="avg_score",
                  title="Average score by department")
     st.plotly_chart(fig)
 
 with tab_top:
-    top = c_top(year, top_n, min_reviews)
+    top = db_call(c_top, year, top_n, min_reviews)
+    if top is None:
+        st.stop()
     if dept:
         top = top[top["department_name"] == dept]
     if top.empty:
@@ -85,24 +100,29 @@ with tab_top:
     else:
         fig = px.bar(top, x="avg_score", y="employee", color="department_name",
                      orientation="h", text="dept_rank",
-                     title="Top performers per department (DENSE_RANK window function)")
+                     title="Top performers by department")
         fig.update_layout(yaxis={"categoryorder": "total ascending"})
         st.plotly_chart(fig)
-        st.dataframe(top, hide_index=True)
+        st.dataframe(display_columns(top), hide_index=True)
 
 with tab_attr:
     dimension = st.selectbox("Break attrition down by", list(AnalyticsManager.ATTRITION_DIMENSIONS))
-    attr = c_attrition(dimension)
+    attr = db_call(c_attrition, dimension)
+    if attr is None:
+        st.stop()
     attr["grp"] = attr["grp"].astype(str)
     fig = px.bar(attr, x="grp", y="attrition_rate", text="attrition_rate",
                  title=f"Attrition rate by {dimension.lower()} (%)",
                  labels={"grp": dimension, "attrition_rate": "Attrition rate %"})
     fig.add_hline(y=kpis["attrition_rate"], line_dash="dash", annotation_text="Overall")
     st.plotly_chart(fig)
-    st.dataframe(attr, hide_index=True)
+    st.dataframe(display_columns(attr), hide_index=True)
 
 with tab_proj:
-    overdue, overloaded = c_bottlenecks()
+    bottlenecks = db_call(c_bottlenecks)
+    if bottlenecks is None:
+        st.stop()
+    overdue, overloaded = bottlenecks
     left, right = st.columns(2)
     with left:
         st.subheader("Overdue active projects")
@@ -111,7 +131,7 @@ with tab_proj:
         else:
             fig = px.bar(overdue, x="project_code", y="days_overdue", title="Days past planned end")
             st.plotly_chart(fig)
-            st.dataframe(overdue, hide_index=True)
+            st.dataframe(display_columns(overdue), hide_index=True)
     with right:
         st.subheader("Over-allocated employees (>100%)")
         if overloaded.empty:
@@ -120,4 +140,4 @@ with tab_proj:
             fig = px.bar(overloaded.head(15), x="employee", y="total_allocation",
                          color="department_name", title="Top over-allocated employees")
             st.plotly_chart(fig)
-            st.dataframe(overloaded, hide_index=True)
+            st.dataframe(display_columns(overloaded), hide_index=True)

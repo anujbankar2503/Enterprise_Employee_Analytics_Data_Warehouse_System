@@ -3,8 +3,9 @@ import threading
 from contextlib import contextmanager
 
 import mysql.connector
-from dotenv import load_dotenv
 from mysql.connector import pooling
+
+from src.config import database_config
 
 
 class DatabaseError(Exception):
@@ -41,13 +42,9 @@ class DatabaseConnection:
                 "password": cfg["password"],
             }
         except Exception:
-            load_dotenv()
-            return {
-                "host": os.getenv("DB_HOST"),
-                "port": int(os.getenv("DB_PORT", 3306)),
-                "user": os.getenv("DB_USER"),
-                "password": os.getenv("DB_PASSWORD"),
-            }
+            settings = database_config("mysql")
+            settings.pop("database", None)
+            return settings
 
     @classmethod
     def _get_pool(cls):
@@ -96,7 +93,9 @@ class DatabaseConnection:
             cur.execute(sql, params or ())
             return cur.lastrowid
 
-    def call_procedure(self, name):
-        """Run a stored procedure that takes no arguments, e.g. hr_dw.sp_load_dim_employee."""
+    def call_procedure(self, name, args=()):
+        """Run a stored procedure, optionally with positional arguments."""
         with self._cursor() as cur:
-            cur.execute(f"CALL {name}()")
+            cur.callproc(name, args)
+            for result in cur.stored_results():
+                result.fetchall()

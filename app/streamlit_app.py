@@ -9,7 +9,7 @@ import streamlit as st
 from src.db_manager import DatabaseError
 from src.managers import AnalyticsManager
 
-st.set_page_config(page_title="HR Analytics Warehouse", layout="wide")
+st.set_page_config(page_title="HR Analytics", layout="wide")
 
 
 @st.cache_data(ttl=300)
@@ -19,7 +19,7 @@ def load_home():
 
 
 st.title("Enterprise Employee Analytics")
-st.caption("OLTP data entry  |  Star-schema data warehouse  |  SCD Type 2 history")
+st.caption("Employee records  |  Performance insights  |  Employment history")
 
 try:
     kpis, dept_df, trend_df = load_home()
@@ -46,7 +46,7 @@ with right:
 
 st.markdown(
     "Use the pages in the sidebar:\n"
-    "- **Employees**: onboard, edit (department changes create SCD Type 2 history)\n"
+    "- **Employees**: onboard, edit, and view employment history\n"
     "- **Projects**: create projects and assign employees\n"
     "- **Reviews**: submit performance reviews\n"
     "- **Dashboard**: trends, top performers, attrition risk, bottlenecks"

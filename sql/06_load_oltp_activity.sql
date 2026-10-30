@@ -36,9 +36,9 @@ BEGIN
     -- Reviews (project is optional)
     IF (SELECT COUNT(*) FROM reviews) = 0 THEN
         INSERT INTO reviews (employee_id, project_id, review_date,
-                             performance_rating, performance_score, review_status)
+                             performance_rating, performance_score, review_status, comments)
         SELECT e.employee_id, p.project_id, s.review_date,
-               s.performance_rating, s.performance_score, s.review_status
+               s.performance_rating, s.performance_score, s.review_status, s.comments
         FROM hr_staging.stg_review s
         JOIN employees e ON e.employee_number = s.synthetic_employee_number
         LEFT JOIN projects p ON p.project_code = s.project_code;

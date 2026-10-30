@@ -18,6 +18,20 @@ def _to_df(rows):
 class BaseManager(DatabaseConnection):
     """All managers inherit the singleton pool and the CRUD helpers."""
 
+    def _warehouse_procedure(self):
+        row = self.fetch_one(
+            "SELECT ROUTINE_NAME FROM information_schema.routines "
+            "WHERE ROUTINE_SCHEMA = 'hr_dw' AND ROUTINE_NAME IN "
+            "('sp_run_full_etl', 'sp_etl_oltp_to_olap') "
+            "ORDER BY FIELD(ROUTINE_NAME, 'sp_run_full_etl', 'sp_etl_oltp_to_olap') "
+            "LIMIT 1")
+        if row is None:
+            raise DatabaseError("No compatible warehouse ETL procedure is installed")
+        return f"hr_dw.{row['ROUTINE_NAME']}"
+
+    def _sync_warehouse(self):
+        self.call_procedure(self._warehouse_procedure())
+
 
 class EmployeeManager(BaseManager):
     EDITABLE = {"department_id", "job_role", "job_level", "monthly_income", "work_location"}
@@ -50,7 +64,7 @@ class EmployeeManager(BaseManager):
         sql = (f"INSERT INTO hr_oltp.employees ({', '.join(cols)}) "
                f"VALUES ({', '.join(['%s'] * len(cols))})")
         emp.employee_id = self.execute(sql, values)
-        self.call_procedure("hr_dw.sp_load_dim_employee")
+        self._sync_warehouse()
         return emp.employee_id
 
     def update_employee(self, employee_id, **changes):
@@ -66,7 +80,18 @@ class EmployeeManager(BaseManager):
         self.execute(f"UPDATE hr_oltp.employees SET {sets} WHERE employee_id = %s",
                      (*changes.values(), employee_id))
         if self.TRACKED & set(changes):
-            self.call_procedure("hr_dw.sp_load_dim_employee")
+            procedure = self._warehouse_procedure()
+            if procedure.endswith("sp_run_full_etl"):
+                self.call_procedure(procedure)
+            else:
+                current = self.get_employee(employee_id)
+                self.call_procedure(
+                    "hr_dw.sp_scd2_update_employee",
+                    (employee_id, current["department_id"], current["job_role"],
+                     current["job_level"], current["monthly_income"],
+                     current["work_location"]),
+                )
+                self.call_procedure(procedure)
 
     def get_employee(self, employee_id):
         return self.fetch_one(
@@ -100,7 +125,7 @@ class ProjectManager(BaseManager):
             "project_start_date, planned_end_date) VALUES (%s, %s, %s, %s, %s)",
             (project.project_code, project.project_name, project.project_status,
              project.project_start_date, project.planned_end_date))
-        self.call_procedure("hr_dw.sp_load_dim_project")
+        self._sync_warehouse()
         return project.project_id
 
     def list_projects(self, status=None, limit=500):
@@ -138,14 +163,13 @@ class ReviewManager(BaseManager):
             (review.reviewer_employee_id, review.employee_id, review.project_id,
              review.review_date, review.performance_rating, review.performance_score,
              review.review_status, review.comments))
-        self.call_procedure("hr_dw.sp_load_dim_project")
-        self.call_procedure("hr_dw.sp_load_fact_performance")
+        self._sync_warehouse()
         return review.review_id
 
     def list_reviews(self, employee_id, limit=50):
         return self.fetch_all(
             "SELECT review_id, review_date, project_id, performance_rating, "
-            "performance_score, review_status FROM hr_oltp.reviews "
+            "performance_score, review_status, comments FROM hr_oltp.reviews "
             "WHERE employee_id = %s ORDER BY review_date DESC LIMIT %s", (employee_id, limit))
 
 

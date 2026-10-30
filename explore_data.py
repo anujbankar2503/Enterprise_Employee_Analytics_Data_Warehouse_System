@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import pandas as pd
 
-df = pd.read_csv("data/WA_Fn-UseC_-HR-Employee-Attrition.csv")
+CSV_PATH = Path(__file__).resolve().parent / "data" / "WA_Fn-UseC_-HR-Employee-Attrition.csv"
+df = pd.read_csv(CSV_PATH)
 
 print(df.shape)
 print(df.columns.tolist())

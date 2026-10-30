@@ -1,8 +1,7 @@
-import os
-
 import mysql.connector
 import pandas as pd
-from dotenv import load_dotenv
+
+from src.config import database_config
 
 
 class StagingLoader:
@@ -37,19 +36,12 @@ class StagingLoader:
         ],
         "stg_review": [
             "synthetic_employee_number", "project_code", "review_date",
-            "performance_rating", "performance_score", "review_status",
+            "performance_rating", "performance_score", "review_status", "comments",
         ],
     }
 
     def __init__(self):
-        load_dotenv()
-        self.conn = mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            port=int(os.getenv("DB_PORT")),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database="hr_staging",
-        )
+        self.conn = mysql.connector.connect(**database_config("hr_staging"))
 
     def close(self):
         self.conn.close()

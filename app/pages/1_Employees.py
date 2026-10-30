@@ -8,7 +8,7 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-from app.helpers import ROLES, employee_picker
+from app.helpers import ROLES, display_columns, employee_picker
 from src.db_manager import DatabaseError
 from src.entities import Employee
 from src.managers import EmployeeManager
@@ -63,11 +63,11 @@ with tab_add:
                 education=education, education_field=edu_field, business_travel=travel,
                 distance_from_home=distance, overtime=overtime,
                 total_working_years=years, num_companies_worked=companies)
-            with st.spinner("Saving employee and syncing the warehouse..."):
+            with st.spinner("Saving employee details..."):
                 new_id = em.add_employee(emp)
             st.cache_data.clear()
             st.success(f"Employee {emp.full_name} created: {emp.employee_number} "
-                       f"(id {new_id}). First SCD Type 2 row added to the warehouse.")
+                       f"(record {new_id}).")
         except (ValueError, DatabaseError) as e:
             st.error(f"Could not save: {e}")
 
@@ -75,7 +75,11 @@ with tab_add:
 with tab_edit:
     emp_id = employee_picker("edit")
     if emp_id:
-        cur = em.get_employee(emp_id)
+        try:
+            cur = em.get_employee(emp_id)
+        except DatabaseError as error:
+            st.error(f"Database connection problem: {error}")
+            st.stop()
         st.subheader(f"{cur['first_name']} {cur['last_name']} - {cur['employee_number']}")
 
         roles = ROLES if cur["job_role"] in ROLES else [cur["job_role"], *ROLES]
@@ -105,16 +109,20 @@ with tab_edit:
                 st.info("Nothing changed.")
             else:
                 try:
-                    with st.spinner("Updating OLTP and creating the SCD Type 2 version..."):
+                    with st.spinner("Updating employee details..."):
                         em.update_employee(emp_id, **changes)
                     st.cache_data.clear()
-                    st.success("Saved. The warehouse now holds a new version of this employee.")
+                    st.success("Saved. Employment history has been updated.")
                 except (ValueError, DatabaseError) as e:
                     st.error(f"Could not save: {e}")
 
-        st.markdown("#### Employment history (Dim_Employee, SCD Type 2)")
-        hist = pd.DataFrame(em.get_history(emp_id))
+        st.markdown("#### Employment history")
+        try:
+            hist = pd.DataFrame(em.get_history(emp_id))
+        except DatabaseError as error:
+            st.error(f"Database connection problem: {error}")
+            st.stop()
         if not hist.empty:
             hist["monthly_income"] = hist["monthly_income"].astype(float)
             hist["is_current"] = hist["is_current"].astype(bool)
-            st.dataframe(hist, hide_index=True)
+            st.dataframe(display_columns(hist), hide_index=True)

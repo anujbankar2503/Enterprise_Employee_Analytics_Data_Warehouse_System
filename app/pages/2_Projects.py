@@ -8,7 +8,7 @@ from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 
-from app.helpers import employee_picker
+from app.helpers import display_columns, employee_picker
 from src.db_manager import DatabaseError
 from src.entities import Project
 from src.managers import ProjectManager
@@ -32,15 +32,20 @@ with tab_create:
         try:
             project = Project(project_code=code, project_name=name, project_start_date=start,
                               planned_end_date=end, project_status=status)
-            with st.spinner("Saving project and syncing the warehouse..."):
+            with st.spinner("Saving project details..."):
                 pid = pm.create_project(project)
             st.cache_data.clear()
-            st.success(f"Project {project.project_code} created (id {pid}).")
+            st.success(f"Project {project.project_code} created (record {pid}).")
         except (ValueError, DatabaseError) as e:
             st.error(f"Could not save: {e}")
 
 with tab_assign:
-    open_projects = [p for p in pm.list_projects() if p["project_status"] in ("Planned", "Active")]
+    try:
+        open_projects = [p for p in pm.list_projects()
+                         if p["project_status"] in ("Planned", "Active")]
+    except DatabaseError as error:
+        st.error(f"Database connection problem: {error}")
+        st.stop()
     options = {p["project_id"]: f"{p['project_code']} - {p['project_name']} ({p['project_status']})"
                for p in open_projects}
     emp_id = employee_picker("assign")
@@ -65,5 +70,9 @@ with tab_assign:
 
 with tab_list:
     status_filter = st.selectbox("Status", ["All", "Planned", "Active", "Completed", "Cancelled"])
-    rows = pm.list_projects(None if status_filter == "All" else status_filter)
-    st.dataframe(pd.DataFrame(rows), hide_index=True)
+    try:
+        rows = pm.list_projects(None if status_filter == "All" else status_filter)
+    except DatabaseError as error:
+        st.error(f"Database connection problem: {error}")
+        st.stop()
+    st.dataframe(display_columns(pd.DataFrame(rows)), hide_index=True)

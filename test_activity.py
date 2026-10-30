@@ -1,7 +1,10 @@
+from pathlib import Path
+
 import pandas as pd
 from src.etl.data_synthesizer import DataSynthesizer
 
-synth = DataSynthesizer("data/WA_Fn-UseC_-HR-Employee-Attrition.csv")
+CSV_PATH = Path(__file__).resolve().parent / "data" / "WA_Fn-UseC_-HR-Employee-Attrition.csv"
+synth = DataSynthesizer(CSV_PATH)
 synth.scale(100_000)
 synth.generate_history()
 prj = synth.generate_projects()

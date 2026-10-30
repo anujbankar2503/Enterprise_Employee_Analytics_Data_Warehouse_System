@@ -7,11 +7,13 @@ import plotly.express as px
 import streamlit as st
 
 from app.helpers import display_columns
+from app.styles import apply_styles, page_header
 from src.db_manager import DatabaseError
 from src.managers import AnalyticsManager, EmployeeManager
 
 st.set_page_config(page_title="Analytics Dashboard", layout="wide")
-st.title("Analytics Dashboard")
+apply_styles()
+page_header("Workforce intelligence", "Analytics dashboard", "Signals for performance, retention, and project health.")
 
 an = AnalyticsManager()
 

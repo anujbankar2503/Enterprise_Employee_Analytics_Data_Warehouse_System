@@ -9,12 +9,14 @@ import pandas as pd
 import streamlit as st
 
 from app.helpers import ROLES, display_columns, employee_picker
+from app.styles import apply_styles, page_header
 from src.db_manager import DatabaseError
 from src.entities import Employee
 from src.managers import EmployeeManager
 
 st.set_page_config(page_title="Employees", layout="wide")
-st.title("Employees")
+apply_styles()
+page_header("People directory", "Employees", "Onboard people, keep records current, and review career history.")
 
 em = EmployeeManager()
 try:

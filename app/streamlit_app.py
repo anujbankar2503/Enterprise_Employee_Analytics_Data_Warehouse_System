@@ -6,10 +6,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import plotly.express as px
 import streamlit as st
 
+from app.styles import apply_styles, page_header
 from src.db_manager import DatabaseError
 from src.managers import AnalyticsManager
 
 st.set_page_config(page_title="HR Analytics", layout="wide")
+apply_styles()
 
 
 @st.cache_data(ttl=300)
@@ -18,8 +20,8 @@ def load_home():
     return an.kpis(), an.department_performance(), an.yoy_trend()
 
 
-st.title("Enterprise Employee Analytics")
-st.caption("Employee records  |  Performance insights  |  Employment history")
+page_header("People operations", "Enterprise Employee Analytics",
+            "A clear view of workforce health, performance, and development.")
 
 try:
     kpis, dept_df, trend_df = load_home()
@@ -44,10 +46,7 @@ with right:
                  title="Average review score by department")
     st.plotly_chart(fig)
 
+st.markdown("### Workbench")
 st.markdown(
-    "Use the pages in the sidebar:\n"
-    "- **Employees**: onboard, edit, and view employment history\n"
-    "- **Projects**: create projects and assign employees\n"
-    "- **Reviews**: submit performance reviews\n"
-    "- **Dashboard**: trends, top performers, attrition risk, bottlenecks"
+    "Use the pages in the sidebar to manage people, projects, reviews, and workforce insights."
 )

@@ -1,7 +1,0 @@
-# Default owners for the repository
-* @anujbankar2503
-
-# Application and data-access code
-/app/ @anujbankar2503
-/src/ @anujbankar2503
-/sql/ @anujbankar2503

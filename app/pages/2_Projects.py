@@ -9,12 +9,14 @@ import pandas as pd
 import streamlit as st
 
 from app.helpers import display_columns, employee_picker
+from app.styles import apply_styles, page_header
 from src.db_manager import DatabaseError
 from src.entities import Project
 from src.managers import ProjectManager
 
 st.set_page_config(page_title="Projects", layout="wide")
-st.title("Projects and assignments")
+apply_styles()
+page_header("Delivery workspace", "Projects and assignments", "Plan active work and keep team capacity visible.")
 
 pm = ProjectManager()
 tab_create, tab_assign, tab_list = st.tabs(["Create project", "Assign employee", "All projects"])

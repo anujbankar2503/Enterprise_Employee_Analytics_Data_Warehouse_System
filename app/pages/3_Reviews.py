@@ -9,12 +9,14 @@ import pandas as pd
 import streamlit as st
 
 from app.helpers import display_columns, employee_picker
+from app.styles import apply_styles, page_header
 from src.db_manager import DatabaseError
 from src.entities import Review
 from src.managers import ProjectManager, ReviewManager
 
 st.set_page_config(page_title="Reviews", layout="wide")
-st.title("Performance reviews")
+apply_styles()
+page_header("Talent development", "Performance reviews", "Capture thoughtful feedback and track progress over time.")
 
 rm, pm = ReviewManager(), ProjectManager()
 try:

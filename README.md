@@ -67,7 +67,7 @@ mysql -h localhost -u root -p hr_dw -e "CALL sp_run_full_etl();"
 Start the application from the project root:
 
 ```powershell
-py -3 -m streamlit run app/Home.py
+py -3 -m streamlit run app/streamlit_app.py
 ```
 
 Run the application from the project root so imports and repository-relative

@@ -19,6 +19,8 @@ DISPLAY_COLUMN_NAMES = {
     "department_name": "Department",
     "first_name": "First name",
     "last_name": "Last name",
+    "hire_date": "Hire date",
+    "created_date": "Added on",
     "job_role": "Job role",
     "job_level": "Job level",
     "monthly_income": "Monthly income",

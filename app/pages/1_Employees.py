@@ -27,7 +27,8 @@ except DatabaseError as e:
 dept_names = {d["department_id"]: d["department_name"] for d in departments}
 dept_ids = list(dept_names)
 
-tab_add, tab_edit = st.tabs(["Onboard employee", "Search, edit and history"])
+tab_add, tab_edit, tab_recent = st.tabs(
+    ["Onboard employee", "Search, edit and history", "Recently added"])
 
 # ---------------------------------------------------------------- onboard
 with tab_add:
@@ -128,3 +129,16 @@ with tab_edit:
             hist["monthly_income"] = hist["monthly_income"].astype(float)
             hist["is_current"] = hist["is_current"].astype(bool)
             st.dataframe(display_columns(hist), hide_index=True)
+
+# ------------------------------------------------------------ recently added
+with tab_recent:
+    limit = st.selectbox("Show latest", [5, 10, 25, 50], index=1)
+    try:
+        recent = pd.DataFrame(em.list_recent_employees(limit))
+    except DatabaseError as error:
+        st.error(f"Database connection problem: {error}")
+        st.stop()
+    if recent.empty:
+        st.info("No employees have been added yet.")
+    else:
+        st.dataframe(display_columns(recent), hide_index=True)

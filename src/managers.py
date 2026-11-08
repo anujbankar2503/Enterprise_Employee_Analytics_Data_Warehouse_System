@@ -109,6 +109,14 @@ class EmployeeManager(BaseManager):
             "WHERE e.employee_number = %s OR e.first_name LIKE %s OR e.last_name LIKE %s "
             "ORDER BY e.employee_id LIMIT %s", (term, like, like, limit))
 
+    def list_recent_employees(self, limit=10):
+        return self.fetch_all(
+            "SELECT e.employee_id, e.employee_number, e.first_name, e.last_name, "
+            "d.department_name, e.job_role, e.hire_date, e.created_date "
+            "FROM hr_oltp.employees e JOIN hr_oltp.departments d "
+            "ON d.department_id = e.department_id "
+            "ORDER BY e.created_date DESC, e.employee_id DESC LIMIT %s", (limit,))
+
     def get_history(self, employee_id):
         return self.fetch_all(
             "SELECT de.start_date, de.end_date, de.is_current, dep.department_name, "

@@ -197,11 +197,6 @@ input, textarea, [data-baseweb="select"] > div {
 
 def apply_styles() -> None:
     st.markdown(STYLE, unsafe_allow_html=True)
-    st.sidebar.markdown(
-        "<div style='font-family: Space Grotesk, sans-serif; font-size: 1.15rem; "
-        "font-weight: 700; color: #f4faf7; padding: 0.5rem 0 1.5rem;'>People Ops<br>Analytics</div>",
-        unsafe_allow_html=True,
-    )
 
 
 def page_header(kicker: str, title: str, subtitle: str) -> None:

@@ -9,14 +9,20 @@ from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_PATH = PROJECT_ROOT / "app" / ".env"
+ROOT_ENV = PROJECT_ROOT / ".env"
+APP_ENV = PROJECT_ROOT / "app" / ".env"
+ENV_PATH = ROOT_ENV if ROOT_ENV.exists() else APP_ENV
 
-load_dotenv(ENV_PATH, override=True)
+load_dotenv(APP_ENV, override=True)
+if ROOT_ENV.exists():
+    load_dotenv(ROOT_ENV, override=True)
 
 
 def database_config(database: str) -> dict[str, object]:
     """Return validated MySQL connection settings for a schema."""
-    load_dotenv(ENV_PATH, override=True)
+    load_dotenv(APP_ENV, override=True)
+    if ROOT_ENV.exists():
+        load_dotenv(ROOT_ENV, override=True)
     required = ("DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD")
     missing = [name for name in required if not os.getenv(name)]
     if missing:
